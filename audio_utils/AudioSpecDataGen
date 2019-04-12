@@ -1,0 +1,80 @@
+import scipy.io.wavfile as wav
+from scipy import signal
+import wave, os, glob, random
+import numpy as np
+import matplotlib.pyplot as plt
+
+def amplitude(time, data):
+    plt.figure(1)
+    plt.subplot(211)
+    plt.plot(time, data, linewidth=0.02, alpha=1, color='#000000')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.show()
+
+def spectrogram(rate, data):
+    sample_freq, segment_time, spec_data = signal.spectrogram(data, rate)
+    plt.specgram(data, Fs=rate, NFFT=256, pad_to=2048, mode='psd', noverlap=0, cmap=plt.get_cmap('autumn_r'))
+    #plt.pcolormesh(segment_time, sample_freq, spec_data )
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
+    #cbar=plt.colorbar(im)
+    #cbar.set_label('Intensity dB')
+    plt.show()
+
+path_x = "D:/downloads/download/wav/"
+file = "D:/downloads/download/wav/08b03Tc.wav"
+file_y = "D:/downloads/download/wav/08b03Tc.wav"
+rate = []
+x_train = np.zeros( (535, 130, 700) )
+k=-1
+
+for filename in glob.glob(os.path.join(path_x, '*.wav')):
+    rate_value, x_train_value = wav.read(filename)
+    sample_freq, segment_time, spec_data = signal.spectrogram(x_train_value, rate_value)
+    rate.append(rate_value)
+    l = spec_data.shape[0]
+    ll = spec_data.shape[1]
+    k = k + 1
+    for j in range(l):
+        for jj in range(ll):
+            x_train[k][j][jj] = spec_data[j][jj]
+    
+    #if amplitude
+    #l = x_train_value.shape[0]
+    #k = k + 1
+    #for j in range(l):
+    #    x_train[0][k][j] = x_train_value[j]
+    
+x_train = x_train.reshape(1, 535, 91000)
+
+labels = np.zeros( (1, 535, 1) )
+for i in range(535):
+    j =  random.randint(0, 0)
+    labels[0][i][j] = 1
+    continue
+
+from AudioDataGenerator import AudioDataGenerator
+
+datagen = AudioDataGenerator(
+                featurewise_center=True,
+                featurewise_std_normalization=True,
+                shift=.2,
+                horizontal_flip=True,
+                zca_whitening=True)
+
+from keras import models, layers
+
+input_shape = (535, 91000)
+model = models.Sequential()
+model.add(layers.Dense(64, activation='relu', input_shape=input_shape))
+model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(7, activation='softmax')) #7 классов
+
+model.compile(optimizer='rmsprop',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.fit_generator(datagen.flow(x_train, labels, batch_size=16),
+                    steps_per_epoch = 535/16,
+                    epochs = 10)
