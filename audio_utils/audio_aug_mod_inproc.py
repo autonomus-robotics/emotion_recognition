@@ -25,7 +25,7 @@ import pylab
 
 path_x = "D:/DB_audio/"
 rate = []
-x_train = np.zeros( (3300, 130, 700) )
+x_train = np.zeros( (3300, 130, 700) ) #TODO: make dynamic shape determination
 k=-1
 
 for filename in glob.glob(os.path.join(path_x, '*.wav')):
@@ -43,14 +43,14 @@ for filename in glob.glob(os.path.join(path_x, '*.wav')):
                                              n_mels=256,
                                              hop_length=128,
                                              fmax=8000)
-    l = melspec.shape[0]
+    l = melspec.shape[0] #TODO: rename the variables 'l' and 'll' , make it as much informative as it's possible
     ll = melspec.shape[1]
     k = k + 1
     for j in range(l):
         for jj in range(ll):
             x_train[k][j][jj] = melspec[j][jj]
     
-    for pp in range(10):
+    for pp in range(10): # TODO: make the number of iterations global constant so we can change it easily
         warped_masked_spectrogram = spec_augment_tensorflow.spec_augment(mel_spectrogram=melspec)
         #print(warped_masked_spectrogram)
         #spec_augment_tensorflow.visualization_spectrogram(melspec, 'before')
